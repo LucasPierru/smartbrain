@@ -6,6 +6,8 @@ import Logo from './components/logo/Logo';
 import Rank from './components/rank/Rank';
 import ImageLinkForm from './components/imagelinkform/ImageLinkForm';
 import FaceRecognition from './components/facerecognition/FaceRecognition';
+import SignIn from './components/signin/SignIn';
+import Register from './components/register/Register';
 import './App.css';
 
 const particlesOptions = {
@@ -40,7 +42,9 @@ class App extends Component {
     this.state = {
       input: '',
       imageUrl: '',
-      box: {}
+      box: {},
+      route: 'signin',
+      isSignedIn: false
     }
   }
   //regions is an array if you have multiple faces
@@ -100,6 +104,15 @@ class App extends Component {
      .catch((error) => console.log("error", error));
   }
 
+  onRouteChange = (route) => {
+    if (route === 'signout') {
+      this.setState({ isSignedIn: false })
+    } else if (route === 'home') {
+      this.setState({ isSignedIn: true })
+    }
+    this.setState({route: route});
+  }
+
   render() {
     return (
       <div className="App">
@@ -109,11 +122,20 @@ class App extends Component {
           loaded={particlesLoaded}
           params={particlesOptions} 
     />*/}
-        <Navigation />
-        <Logo />
-        <Rank />
-        <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit}/>    
-        <FaceRecognition box={this.state.box} imageUrl={this.state.imageUrl}/>
+        <Navigation isSignedIn={this.state.isSignedIn} onRouteChange={this.onRouteChange}/>
+        { this.state.route === 'home' 
+          ? <div>
+              <Logo />
+              <Rank />
+              <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit}/>    
+              <FaceRecognition box={this.state.box} imageUrl={this.state.imageUrl}/>
+            </div>
+          : (
+              this.state.route === 'signin' 
+              ? <SignIn onRouteChange={this.onRouteChange}/> 
+              : <Register onRouteChange={this.onRouteChange}/>
+            )
+        }
       </div>
     );
   }
