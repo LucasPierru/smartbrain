@@ -36,23 +36,25 @@ const particlesLoaded = (container) => {
   //console.log(container);
 };
 
+const initialState = {
+  input: '',
+  imageUrl: '',
+  box: {},
+  route: 'signin',
+  isSignedIn: false,
+  user: {
+    id: '',
+    name: '',
+    email: '',
+    entries: 0,
+    joined: ''
+  }
+}
+
 class App extends Component {
   constructor() {
     super();
-    this.state = {
-      input: '',
-      imageUrl: '',
-      box: {},
-      route: 'signin',
-      isSignedIn: false,
-      user: {
-        id: '',
-        name: '',
-        email: '',
-        entries: 0,
-        joined: ''
-      }
-    }
+    this.state = initialState;
   }
 
   loadUser = (data) => {
@@ -67,7 +69,7 @@ class App extends Component {
 
   //regions is an array if you have multiple faces
   calculateFaceLocation = (data) => {
-    const clarifaiFace = JSON.parse(data).outputs[0].data.regions[0].region_info.bounding_box;
+    const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
     const image = document.getElementById('inputimage');
     const width = Number(image.width);
     const height = Number(image.height);
@@ -87,39 +89,19 @@ class App extends Component {
     this.setState({input: event.target.value});
   }
 
-  onButtonSubmit = () => {
+  onButtonSubmit = async() => {
     this.setState({imageUrl: this.state.input});
-    const raw = JSON.stringify({
-      user_app_id : {
-        user_id: "luysru7_3635",
-        app_id: "smart-brain"
-      },
-      inputs: [
-        {
-          data: {
-            image: {
-              url: this.state.input
-            },
-          },
-        },
-      ],
-    });
- 
-    fetch(
-       "https://api.clarifai.com/v2/models/f76196b43bbd45c99b4f3cd8e8b40a8a/outputs",
-       {
-         method: "POST",
-         headers: {
-           Accept: "application/json",
-           Authorization: "Key c2bb7b98f077494fb99f52b902385a51",
-         },
-         body: raw,
-       }
-     )
-     .then((response) => response.text())
-     .then((result) => {
-       if (result) {
-        fetch('http://localhost:3001/image', {
+    try {
+      const response = await fetch('https://floating-taiga-49182.herokuapp.com/imageurl', {
+        method: 'post',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            input: this.state.input,
+        })
+      })  
+      const data = await response.json() 
+      if (data) {
+        fetch('https://floating-taiga-49182.herokuapp.com/image', {
           method: 'put',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
@@ -130,16 +112,18 @@ class App extends Component {
         .then(count => {
           this.setState(Object.assign(this.state.user, { entries: count }))
         })
-       }
-       this.displayFaceBox(this.calculateFaceLocation(result))
-      })
-       //const data = JSON.parse(result).outputs[0].data.regions[0].region_info.bounding_box
-     .catch((error) => console.log("error", error));
-  }
+        .catch(console.log)
+      }
+      this.displayFaceBox(this.calculateFaceLocation(data))
+    } catch(error) {
+      console.log("There was an error when submitting:", error);
+    }
+    
+}
 
   onRouteChange = (route) => {
     if (route === 'signin') {
-      this.setState({ isSignedIn: false })
+      this.setState(initialState)
     } else if (route === 'home') {
       this.setState({ isSignedIn: true })
     }
@@ -149,12 +133,12 @@ class App extends Component {
   render() {
     return (
       <div className="App">
-        {/*<Particles className="particles"
+        <Particles className="particles"
           id="tsparticles"
           init={particlesInit}
           loaded={particlesLoaded}
           params={particlesOptions} 
-    />*/}
+        />
         <Navigation isSignedIn={this.state.isSignedIn} onRouteChange={this.onRouteChange}/>
         { this.state.route === 'home' 
           ? <div>
